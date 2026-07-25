@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: finref_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: finref_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: finref_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-celery:
+    image: redis:7-alpine
+    container_name: finref_redis_celery
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_celery_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  celery-worker:
+    build: .
+    container_name: finref_celery_worker
+    command: celery -A app.celery_tasks.celery_app worker --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://redis-celery:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis-celery:6379/2
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/finref_db
+    depends_on:
+      - postgres
+      - redis-celery
+    volumes:
+      - .:/app
+
+  celery-beat:
+    build: .
+    container_name: finref_celery_beat
+    command: celery -A app.celery_tasks.celery_app beat --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://redis-celery:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis-celery:6379/2
+    depends_on:
+      - postgres
+      - redis-celery
+    volumes:
+      - .:/app
+
+  api:
+    build: .
+    container_name: finref_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/finref_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis-celery:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis-celery:6379/2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      redis-celery:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:
+  redis_data:
+  redis_celery_data:
