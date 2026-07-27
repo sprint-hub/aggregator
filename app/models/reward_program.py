@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, DateTime, Boolean, Enum
+from sqlalchemy import Column, String, Float, DateTime, Boolean, Enum, Integer
 from app.models.base import BaseModel
 import enum
 
