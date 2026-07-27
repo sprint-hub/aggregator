@@ -7,15 +7,24 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import declarative_base
 from typing import AsyncGenerator
 from app.core.config import settings
+import ssl
 
-# Create async engine
+# Create async engine with Neon-specific settings
 engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
     pool_size=settings.DATABASE_POOL_SIZE,
     max_overflow=settings.DATABASE_MAX_OVERFLOW,
-    pool_pre_ping=True,
-    pool_recycle=3600,
+    pool_pre_ping=True,  
+    pool_recycle=300,   
+    pool_timeout=30,
+    # Neon specific: SSL is required
+    connect_args={
+        "ssl": ssl.create_default_context(),
+        "server_settings": {
+            "application_name": "finref_backend",
+        }
+    }
 )
 
 # Create async session factory
@@ -45,10 +54,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db():
     """Initialize database - create tables"""
-    async with engine.begin() as conn:
-        # In production, use Alembic migrations instead
-        # await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
+    # For production, use Alembic migrations instead
+    # This is only for development
+    if settings.APP_ENV == "development":
+        async with engine.begin() as conn:
+            # Drop all tables (careful in production!)
+            # await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(Base.metadata.create_all)
+            print(" Database tables created")
 
 
 async def close_db():
