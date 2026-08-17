@@ -363,7 +363,7 @@ class AgentService:
             "account_number": payout_data.account_number[-4:],
             "account_name": payout_data.account_name,
             "is_verified": False,
-            "last_updated": datetime.utcnow()
+            "last_updated": datetime.now(timezone.utc)()
         }
     
     # Profile

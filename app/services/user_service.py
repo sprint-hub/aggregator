@@ -5,6 +5,7 @@ from uuid import UUID
 from app.models.user import User, UserRole, UserStatus, AgentTier
 from app.core.security import get_password_hash, verify_password
 from app.schemas.user import UserCreate, UserUpdate
+from datetime import timezone
 
 
 class UserService:
@@ -78,7 +79,7 @@ class UserService:
         user = await self.get_by_id(db, user_id)
         if user:
             from datetime import datetime
-            user.last_login_at = datetime.utcnow()
+            user.last_login_at = datetime.now(timezone.utc)()
             if ip:
                 user.last_login_ip = ip
             await db.commit()
