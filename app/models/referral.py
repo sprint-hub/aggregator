@@ -46,7 +46,7 @@ class Customer(BaseModel):
     referral_code_id = Column(UUID(as_uuid=True), ForeignKey("referral_codes.id"), nullable=False)
     status = Column(Enum(CustomerStatus), default=CustomerStatus.PENDING)
     initial_deposit = Column(Float, default=0.0)
-    metadata = Column(JSON, default=dict)
+    meta_data = Column("metadata", JSON, default=dict)
 
     # Relationships
     agent = relationship("User", backref="customers")

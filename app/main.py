@@ -8,7 +8,8 @@ import sys
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
-from app.api.v1.endpoints import auth, agent, admin, shared
+from app.api.v1.endpoints import auth
+from app.api.v1.endpoints.agent import dashboard, codes, rewards, wallet, profile, network
 
 # Setup logging
 logger.remove()
@@ -106,9 +107,42 @@ async def root():
     }
 
 
-# Include routers
+# Include Authentication Router
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Authentication"])
-# app.include_router(agent.router, prefix=f"{settings.API_V1_PREFIX}/agent", tags=["Agent"])
+
+# Include Agent Routers
+app.include_router(
+    dashboard.router, 
+    prefix=f"{settings.API_V1_PREFIX}/agent/dashboard", 
+    tags=["Agent Dashboard"]
+)
+app.include_router(
+    codes.router, 
+    prefix=f"{settings.API_V1_PREFIX}/agent/codes", 
+    tags=["Agent Codes"]
+)
+app.include_router(
+    rewards.router, 
+    prefix=f"{settings.API_V1_PREFIX}/agent/rewards", 
+    tags=["Agent Rewards"]
+)
+app.include_router(
+    wallet.router, 
+    prefix=f"{settings.API_V1_PREFIX}/agent/wallet", 
+    tags=["Agent Wallet"]
+)
+app.include_router(
+    profile.router, 
+    prefix=f"{settings.API_V1_PREFIX}/agent/profile", 
+    tags=["Agent Profile"]
+)
+app.include_router(
+    network.router, 
+    prefix=f"{settings.API_V1_PREFIX}/agent/network", 
+    tags=["Agent Network"]
+)
+
+# Note: Admin and Shared routers will be added later
 # app.include_router(admin.router, prefix=f"{settings.API_V1_PREFIX}/admin", tags=["Admin"])
 # app.include_router(shared.router, prefix=f"{settings.API_V1_PREFIX}/shared", tags=["Shared"])
 
