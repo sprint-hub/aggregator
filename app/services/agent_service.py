@@ -229,7 +229,6 @@ class AgentService:
         return {
             "total_earned": float(total_earned.scalar() or 0),
             "pending_rewards": float(pending_rewards.scalar() or 0),
-            "total_commissions": float(total_earned.scalar() or 0),
             "total_bonuses": 0,
             "current_month_earnings": float(current_month_value),
             "previous_month_earnings": float(prev_month_value),

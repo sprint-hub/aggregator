@@ -9,14 +9,15 @@ from app.models.user import User
 from app.services.agent_service import agent_service
 from app.schemas.agent import (
     ReferralCodeCreate,
+    ReferralCodeResponse,
     ReferralCodeUpdate,
-    ReferralCodeResponse
+    ReferralCodeListResponse
 )
 
 router = APIRouter()
 
 
-@router.get("/", response_model=dict)
+@router.get("/", response_model=ReferralCodeListResponse)
 async def get_codes(
     current_user: User = Depends(AgentRequired),
     db: AsyncSession = Depends(get_db),

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
-
+from uuid import UUID
 
 # Dashboard Schemas
 class DashboardStatsResponse(BaseModel):
@@ -18,6 +18,7 @@ class DashboardStatsResponse(BaseModel):
 
 
 # Referral Code Schemas
+
 class ReferralCodeBase(BaseModel):
     """Base referral code schema"""
     code: str
@@ -41,14 +42,22 @@ class ReferralCodeUpdate(BaseModel):
 
 class ReferralCodeResponse(ReferralCodeBase):
     """Referral code response schema"""
-    id: str
-    agent_id: str
+    id: UUID
+    agent_id: UUID
     customers_referred: int
     revenue_generated: float
     created_at: datetime
     updated_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
+
+
+class ReferralCodeListResponse(BaseModel):
+    codes: List[ReferralCodeResponse]
+    total: int
+    page: int
+    limit: int
+    total_pages: int
 
 
 # Rewards Schemas
@@ -56,7 +65,6 @@ class RewardsSummaryResponse(BaseModel):
     """Rewards overview response"""
     total_earned: float
     pending_rewards: float
-    total_commissions: float
     total_bonuses: float
     current_month_earnings: float
     previous_month_earnings: float
