@@ -1,9 +1,9 @@
+import uuid
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, desc
 from sqlalchemy.orm import selectinload
 from uuid import UUID
-import uuid
 from datetime import datetime, timedelta, timezone
 
 from app.models.user import User
@@ -14,7 +14,8 @@ from app.schemas.agent import (
     ReferralCodeCreate,
     ReferralCodeUpdate,
     PayoutMethodUpdate,
-    AgentProfileUpdate
+    AgentProfileUpdate,
+    PayoutMethodResponse
 )
 
 
@@ -329,42 +330,85 @@ class AgentService:
         
         return transactions, total_count
     
-    async def get_payout_method(self, db: AsyncSession, agent_id: UUID) -> Optional[Dict]:
-        """Get payout method"""
-        query = select(Payment).where(
-            Payment.agent_id == agent_id,
-            Payment.status == PaymentStatus.PAID
-        ).order_by(desc(Payment.created_at))
+    async def get_payout_method(self, db: AsyncSession, agent_id: UUID) -> Optional[PayoutMethodResponse]:
+        """Get payout method with proper handling for new users"""
+
+        agent_query = select(User).where(User.id == agent_id)
+        agent_result = await db.execute(agent_query)
+        agent = agent_result.scalar_one_or_none()
         
-        result = await db.execute(query)
-        payment = result.scalar_one_or_none()
-        
-        if not payment:
+        if not agent:
             return None
         
-        return {
-            "bank_name": payment.bank_name,
-            "account_number": payment.bank_account[-4:] if payment.bank_account else "",
-            "account_name": "John Doe",  # Would come from user
-            "is_verified": True,
-            "last_updated": payment.created_at
-        }
+        # Try to get the latest PAID or PROCESSING payment
+        payment_query = select(Payment).where(
+            Payment.agent_id == agent_id,
+            Payment.status.in_([PaymentStatus.PAID, PaymentStatus.PROCESSING])
+        ).order_by(desc(Payment.created_at))
+        
+        payment_result = await db.execute(payment_query)
+        payment = payment_result.scalar_one_or_none()
+        
+        # If we have a payment, use its details
+        if payment:
+            return PayoutMethodResponse(
+                bank_name=payment.bank_name or "",
+                account_number="****" + (payment.bank_account[-4:] if payment.bank_account else "0000"),
+                account_name=f"{agent.first_name} {agent.last_name}",
+                routing_number=getattr(payment, 'routing_number', None),
+                is_verified=True,
+                last_updated=payment.created_at or datetime.utcnow()
+            )
+        
+        # For new users with no payment history
+        # Use default values from user profile
+        return PayoutMethodResponse(
+            bank_name=getattr(agent, 'default_bank_name', "") or "",
+            account_number="****" + (getattr(agent, 'bank_account_last4', "0000") or "0000"),
+            account_name=f"{agent.first_name} {agent.last_name}",
+            routing_number=None,
+            is_verified=False,
+            last_updated=datetime.utcnow()
+        )
     
     async def update_payout_method(
         self,
         db: AsyncSession,
         agent_id: UUID,
         payout_data: PayoutMethodUpdate
-    ) -> Dict[str, Any]:
-        """Update payout method"""
-        return {
-            "bank_name": payout_data.bank_name,
-            "account_number": payout_data.account_number[-4:],
-            "account_name": payout_data.account_name,
-            "is_verified": False,
-            "last_updated": datetime.now(timezone.utc)
-        }
-    
+    ) -> PayoutMethodResponse:
+        """Update payout method for agent"""
+        
+        # Get the agent
+        agent_query = select(User).where(User.id == agent_id)
+        agent_result = await db.execute(agent_query)
+        agent = agent_result.scalar_one_or_none()
+        
+        if not agent:
+            raise ValueError("Agent not found")
+        
+        # Update agent's bank details
+        agent.default_bank_name = payout_data.bank_name
+        agent.bank_account_last4 = payout_data.account_number[-4:] if payout_data.account_number else "0000"
+        # Store encrypted full account number if you have the field
+        if payout_data.routing_number:
+            agent.routing_number = payout_data.routing_number
+        
+        agent.payout_method_verified = False  
+        agent.payout_verified_at = None
+        
+        await db.commit()
+        await db.refresh(agent)
+        
+        return PayoutMethodResponse(
+            bank_name=payout_data.bank_name,
+            account_number="****" + (payout_data.account_number[-4:] if payout_data.account_number else "0000"),
+            account_name=payout_data.account_name,
+            routing_number=payout_data.routing_number,
+            is_verified=False,  
+            last_updated=datetime.utcnow()
+        )
+        
     # Profile
     async def get_profile(self, db: AsyncSession, agent_id: UUID) -> Optional[User]:
         """Get agent profile"""

@@ -45,6 +45,14 @@ class User(BaseModel):
     efficiency_score = Column(Float, default=0.0)
     verification_status = Column(Boolean, default=False)
 
+    # Payout
+    default_bank_name = Column(String(100), nullable=True)
+    bank_account_last4 = Column(String(4), nullable=True)
+    bank_account_encrypted = Column(String(500), nullable=True)  # Encrypted full account
+    routing_number = Column(String(20), nullable=True)
+    payout_method_verified = Column(Boolean, default=False)
+    payout_verified_at = Column(DateTime(timezone=True), nullable=True)
+
     # Admin specific fields
     admin_level = Column(String(50), nullable=True)
     permissions = Column(JSON, default=list)
