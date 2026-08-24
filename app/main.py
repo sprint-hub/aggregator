@@ -86,7 +86,7 @@ async def log_requests(request: Request, call_next):
 
 
 # Health check endpoint
-@app.get("/health")
+@app.get("/api/v1/health")
 async def health_check():
     """Health check endpoint"""
     return {
@@ -94,7 +94,6 @@ async def health_check():
         "environment": settings.APP_ENV,
         "version": "1.0.0"
     }
-
 
 # Root endpoint
 @app.get("/")

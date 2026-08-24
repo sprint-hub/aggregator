@@ -133,7 +133,7 @@ class PayoutMethodUpdate(BaseModel):
 # Profile Schemas
 class AgentProfileResponse(BaseModel):
     """Agent profile response"""
-    id: str
+    id: str|UUID
     email: str
     first_name: str
     last_name: str
