@@ -10,6 +10,15 @@ from app.core.config import settings
 from app.core.database import init_db, close_db
 from app.api.v1.endpoints import auth
 from app.api.v1.endpoints.agent import dashboard, codes, rewards, wallet, profile, network
+from app.api.v1.endpoints.admin import (
+    dashboard as admin_dashboard,
+    agents as admin_agents,
+    codes as admin_codes,
+    rewards as admin_rewards,
+    payments as admin_payments,
+    reports as admin_reports,
+    settings as admin_settings,
+)
 
 # Setup logging
 logger.remove()
@@ -141,8 +150,44 @@ app.include_router(
     tags=["Agent Network"]
 )
 
-# Note: Admin and Shared routers will be added later
-# app.include_router(admin.router, prefix=f"{settings.API_V1_PREFIX}/admin", tags=["Admin"])
+# Include Admin Routers
+app.include_router(
+    admin_dashboard.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/dashboard",
+    tags=["Admin Dashboard"]
+)
+app.include_router(
+    admin_agents.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/agents",
+    tags=["Admin Agents"]
+)
+app.include_router(
+    admin_codes.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/codes",
+    tags=["Admin Codes"]
+)
+app.include_router(
+    admin_rewards.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/rewards",
+    tags=["Admin Rewards"]
+)
+app.include_router(
+    admin_payments.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/payments",
+    tags=["Admin Payments"]
+)
+app.include_router(
+    admin_reports.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/reports",
+    tags=["Admin Reports"]
+)
+app.include_router(
+    admin_settings.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/settings",
+    tags=["Admin Settings"]
+)
+
+# Note: Shared router will be added later
 # app.include_router(shared.router, prefix=f"{settings.API_V1_PREFIX}/shared", tags=["Shared"])
 
 logger.info("Routes registered")
