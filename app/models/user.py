@@ -61,5 +61,3 @@ class User(BaseModel):
     last_login_at = Column(DateTime(timezone=True))
     last_login_ip = Column(String(45))
 
-    # Relationships
-    # Will be defined in other models

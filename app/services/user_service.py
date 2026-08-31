@@ -10,25 +10,26 @@ from datetime import timezone
 
 class UserService:
     async def get_by_id(self, db: AsyncSession, user_id: UUID) -> Optional[User]:
-        """Get user by ID"""
+
+    
         query = select(User).where(User.id == user_id)
         result = await db.execute(query)
         return result.scalar_one_or_none()
 
     async def get_by_email(self, db: AsyncSession, email: str) -> Optional[User]:
-        """Get user by email"""
+        
         query = select(User).where(User.email == email.lower())
         result = await db.execute(query)
         return result.scalar_one_or_none()
 
     async def get_by_agent_code(self, db: AsyncSession, agent_code: str) -> Optional[User]:
-        """Get agent by agent code"""
+       
         query = select(User).where(User.agent_code == agent_code)
         result = await db.execute(query)
         return result.scalar_one_or_none()
 
     async def create(self, db: AsyncSession, user_data: UserCreate) -> User:
-        """Create new user"""
+        
         password_hash = get_password_hash(user_data.password)
 
         user = User(
@@ -50,7 +51,7 @@ class UserService:
         return user
 
     async def update(self, db: AsyncSession, user_id: UUID, user_data: UserUpdate) -> Optional[User]:
-        """Update user"""
+      
         user = await self.get_by_id(db, user_id)
         if not user:
             return None
@@ -66,7 +67,7 @@ class UserService:
         return user
 
     async def authenticate(self, db: AsyncSession, email: str, password: str) -> Optional[User]:
-        """Authenticate user"""
+        
         user = await self.get_by_email(db, email)
         if not user:
             return None
@@ -75,7 +76,7 @@ class UserService:
         return user
 
     async def update_last_login(self, db: AsyncSession, user_id: UUID, ip: str = None):
-        """Update last login timestamp"""
+        
         user = await self.get_by_id(db, user_id)
         if user:
             from datetime import datetime

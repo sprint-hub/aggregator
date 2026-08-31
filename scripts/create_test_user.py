@@ -2,7 +2,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add parent directory to path
+
 sys.path.append(str(Path(__file__).parent.parent))
 
 from app.core.database import AsyncSessionLocal
@@ -28,7 +28,7 @@ async def create_test_users():
         await db.commit()
         print(f" Admin created: {admin.email}")
 
-        # Create an agent user
+        
         agent_data = UserCreate(
             email="agent@finref.com",
             password="Agent123!",

@@ -19,10 +19,8 @@ class AuthService:
         if not user:
             return None, None, None
 
-        # Update last login
         await user_service.update_last_login(db, user.id, ip)
 
-        # Create tokens
         token_data = {
             "user_id": str(user.id),
             "email": user.email,
@@ -39,7 +37,7 @@ class AuthService:
         db: AsyncSession,
         refresh_token: str
     ) -> Tuple[str, str]:
-        """Refresh access token using refresh token"""
+        
         payload = decode_token(refresh_token)
 
         if payload.get("type") != "refresh":

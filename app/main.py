@@ -10,6 +10,15 @@ from app.core.config import settings
 from app.core.database import init_db, close_db
 from app.api.v1.endpoints import auth
 from app.api.v1.endpoints.agent import dashboard, codes, rewards, wallet, profile, network
+from app.api.v1.endpoints.admin import (
+    dashboard as admin_dashboard,
+    agents as admin_agents,
+    codes as admin_codes,
+    rewards as admin_rewards,
+    payments as admin_payments,
+    reports as admin_reports,
+    settings as admin_settings,
+)
 
 # Setup logging
 logger.remove()
@@ -29,26 +38,21 @@ if settings.LOG_FILE:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan context manager for startup/shutdown"""
-    # Startup
     logger.info("Starting up FinRef API...")
     logger.info(f"Environment: {settings.APP_ENV}")
     logger.info(f"Database: {settings.DATABASE_URL.split('@')[1].split('/')[0] if '@' in settings.DATABASE_URL else 'local'}")
 
-    # Initialize database (in production, use Alembic migrations)
     if settings.APP_ENV == "development":
         await init_db()
         logger.info("Database initialized")
 
     yield
 
-    # Shutdown
+   
     logger.info("Shutting down FinRef API...")
     await close_db()
     logger.info("Database connection closed")
 
-
-# Create FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,
     description="Referral Management Platform API",
@@ -58,7 +62,7 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
 )
 
-# CORS Middleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -67,38 +71,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Trusted Host Middleware (production security)
 if settings.APP_ENV == "production":
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["*"],  # Update with actual domains
+        allowed_hosts=["*"],
     )
 
-
-# Request logging middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    """Log all requests"""
     logger.info(f"{request.method} {request.url.path}")
     response = await call_next(request)
     logger.info(f"Response status: {response.status_code}")
     return response
 
-
-# Health check endpoint
 @app.get("/api/v1/health")
 async def health_check():
-    """Health check endpoint"""
+
     return {
         "status": "healthy",
         "environment": settings.APP_ENV,
         "version": "1.0.0"
     }
 
-# Root endpoint
 @app.get("/")
 async def root():
-    """Root endpoint"""
     return {
         "message": f"Welcome to {settings.APP_NAME} API",
         "docs": "/docs" if settings.DEBUG else None,
@@ -106,10 +102,9 @@ async def root():
     }
 
 
-# Include Authentication Router
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Authentication"])
 
-# Include Agent Routers
+
 app.include_router(
     dashboard.router, 
     prefix=f"{settings.API_V1_PREFIX}/agent/dashboard", 
@@ -141,9 +136,42 @@ app.include_router(
     tags=["Agent Network"]
 )
 
-# Note: Admin and Shared routers will be added later
-# app.include_router(admin.router, prefix=f"{settings.API_V1_PREFIX}/admin", tags=["Admin"])
-# app.include_router(shared.router, prefix=f"{settings.API_V1_PREFIX}/shared", tags=["Shared"])
+
+app.include_router(
+    admin_dashboard.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/dashboard",
+    tags=["Admin Dashboard"]
+)
+app.include_router(
+    admin_agents.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/agents",
+    tags=["Admin Agents"]
+)
+app.include_router(
+    admin_codes.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/codes",
+    tags=["Admin Codes"]
+)
+app.include_router(
+    admin_rewards.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/rewards",
+    tags=["Admin Rewards"]
+)
+app.include_router(
+    admin_payments.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/payments",
+    tags=["Admin Payments"]
+)
+app.include_router(
+    admin_reports.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/reports",
+    tags=["Admin Reports"]
+)
+app.include_router(
+    admin_settings.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/settings",
+    tags=["Admin Settings"]
+)
 
 logger.info("Routes registered")
 logger.info(f"API available at http://localhost:8000{settings.API_V1_PREFIX}")
