@@ -21,7 +21,7 @@ async def list_rewards(
     status: Optional[str] = None,
     agent_id: Optional[UUID] = None,
 ):
-    """List reward transactions awaiting review, with filters"""
+   
     rewards, total = await admin_service.list_rewards(db, skip, limit, status, agent_id)
     return {
         "rewards": rewards,

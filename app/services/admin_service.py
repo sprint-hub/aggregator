@@ -1,11 +1,3 @@
-"""
-Admin service.
-
-Business logic for the admin panel: platform dashboard, agent management,
-referral code oversight, reward approvals, payment tracking, reporting, and
-platform settings. Mirrors the layering used in app/services/agent_service.py
-(router -> service -> model, no DB access in routers).
-"""
 import uuid as uuid_lib
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +22,6 @@ from app.schemas.admin import (
 )
 from app.core.security import get_password_hash
 
-# Keys used for the "Platform Settings" screen, stored in system_settings
 REWARD_PER_REFERRAL_KEY = "reward_per_referral"
 MINIMUM_WITHDRAWAL_KEY = "minimum_withdrawal"
 DEFAULT_REWARD_PER_REFERRAL = 50.0
@@ -38,13 +29,8 @@ DEFAULT_MINIMUM_WITHDRAWAL = 100.0
 
 
 class AdminService:
-    """Service for admin-only platform operations"""
-
-    # ------------------------------------------------------------------
-    # Dashboard
-    # ------------------------------------------------------------------
+   
     async def get_dashboard_stats(self, db: AsyncSession) -> Dict[str, Any]:
-        """Get platform-wide overview statistics"""
         total_agents = (await db.execute(
             select(func.count()).where(User.role == UserRole.AGENT)
         )).scalar() or 0
@@ -107,9 +93,6 @@ class AdminService:
             "total_paid_out": float(total_paid_out),
         }
 
-    # ------------------------------------------------------------------
-    # Agent management
-    # ------------------------------------------------------------------
     async def list_agents(
         self,
         db: AsyncSession,
@@ -217,7 +200,6 @@ class AdminService:
     async def update_agent(
         self, db: AsyncSession, agent_id: UUID, data: AdminAgentUpdate
     ) -> Optional[User]:
-        """Update an agent's profile fields"""
         agent = await self.get_agent(db, agent_id)
         if not agent:
             return None
@@ -233,7 +215,7 @@ class AdminService:
     async def update_agent_status(
         self, db: AsyncSession, agent_id: UUID, data: AdminAgentStatusUpdate
     ) -> Optional[User]:
-        """Suspend or reactivate an agent"""
+     
         agent = await self.get_agent(db, agent_id)
         if not agent:
             return None
@@ -243,9 +225,6 @@ class AdminService:
         await db.refresh(agent)
         return agent
 
-    # ------------------------------------------------------------------
-    # Referral codes (cross-agent)
-    # ------------------------------------------------------------------
     async def list_referral_codes(
         self,
         db: AsyncSession,
@@ -254,7 +233,7 @@ class AdminService:
         status: Optional[str] = None,
         agent_id: Optional[UUID] = None,
     ) -> tuple[List[Dict[str, Any]], int]:
-        """List referral codes across all agents"""
+    
         query = select(ReferralCode).options(selectinload(ReferralCode.agent))
 
         if status:
@@ -286,7 +265,7 @@ class AdminService:
     async def update_referral_code_status(
         self, db: AsyncSession, code_id: UUID, status: str
     ) -> Optional[ReferralCode]:
-        """Admin override of a referral code's status"""
+    
         query = select(ReferralCode).where(ReferralCode.id == code_id)
         code = (await db.execute(query)).scalar_one_or_none()
         if not code:
@@ -297,9 +276,7 @@ class AdminService:
         await db.refresh(code)
         return code
 
-    # ------------------------------------------------------------------
-    # Rewards (reward transactions) — approve / reject workflow
-    # ------------------------------------------------------------------
+
     async def list_rewards(
         self,
         db: AsyncSession,
@@ -308,7 +285,7 @@ class AdminService:
         status: Optional[str] = None,
         agent_id: Optional[UUID] = None,
     ) -> tuple[List[Dict[str, Any]], int]:
-        """List reward transactions (credit-type transactions) for review"""
+
         query = select(Transaction).where(Transaction.type == TransactionType.CREDIT).options(
             selectinload(Transaction.agent),
             selectinload(Transaction.customer),
@@ -325,7 +302,6 @@ class AdminService:
         query = query.order_by(desc(Transaction.created_at)).offset(skip).limit(limit)
         transactions = (await db.execute(query)).scalars().all()
 
-        # Referral codes are looked up separately since Transaction only stores the FK
         code_ids = [t.referral_code_id for t in transactions if t.referral_code_id]
         codes_by_id = {}
         if code_ids:
@@ -349,14 +325,14 @@ class AdminService:
         return results, total
 
     async def get_reward(self, db: AsyncSession, reward_id: UUID) -> Optional[Transaction]:
-        """Get a single reward transaction by ID"""
+        
         query = select(Transaction).where(
             Transaction.id == reward_id, Transaction.type == TransactionType.CREDIT
         )
         return (await db.execute(query)).scalar_one_or_none()
 
     async def approve_reward(self, db: AsyncSession, reward_id: UUID) -> Optional[Transaction]:
-        """Approve a pending reward"""
+       
         reward = await self.get_reward(db, reward_id)
         if not reward:
             return None
@@ -385,9 +361,7 @@ class AdminService:
         await db.refresh(reward)
         return reward
 
-    # ------------------------------------------------------------------
-    # Payments
-    # ------------------------------------------------------------------
+
     async def list_payments(
         self,
         db: AsyncSession,
@@ -396,7 +370,7 @@ class AdminService:
         status: Optional[str] = None,
         agent_id: Optional[UUID] = None,
     ) -> tuple[List[Dict[str, Any]], int]:
-        """List payments across all agents"""
+     
         query = select(Payment).options(selectinload(Payment.agent))
 
         if status:
@@ -427,10 +401,7 @@ class AdminService:
     async def create_payment_batch(
         self, db: AsyncSession, data: AdminPaymentBatchCreate
     ) -> Dict[str, Any]:
-        """
-        Create a payment batch: for each agent with approved, unpaid credit
-        transactions, create a single pending Payment for their outstanding balance.
-        """
+      
         payment_date = data.payment_date or datetime.now(timezone.utc)
         created_payments: List[Payment] = []
 
@@ -463,7 +434,6 @@ class AdminService:
             db.add(payment)
             await db.flush()
 
-            # Tag the underlying reward transactions as claimed by this payment
             update_query = select(Transaction).where(
                 Transaction.agent_id == agent_id,
                 Transaction.status == TransactionStatus.APPROVED,
@@ -505,9 +475,7 @@ class AdminService:
         await db.refresh(payment)
         return payment
 
-    # ------------------------------------------------------------------
-    # Reports
-    # ------------------------------------------------------------------
+ 
     async def get_agent_performance_report(
         self,
         db: AsyncSession,
@@ -565,9 +533,6 @@ class AdminService:
 
         return results, total
 
-    # ------------------------------------------------------------------
-    # Settings
-    # ------------------------------------------------------------------
     async def _get_or_default(self, db: AsyncSession, key: str, default: float) -> float:
         query = select(SystemSetting).where(SystemSetting.key == key)
         setting = (await db.execute(query)).scalar_one_or_none()

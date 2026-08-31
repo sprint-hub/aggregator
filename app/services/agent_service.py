@@ -20,9 +20,7 @@ from app.schemas.agent import (
 
 
 class AgentService:
-    """Service for agent-specific operations"""
     
-    # Dashboard
     async def get_dashboard_stats(self, db: AsyncSession, agent_id: UUID) -> Dict[str, Any]:
         """Get agent dashboard statistics"""
         # Get total codes
@@ -32,14 +30,13 @@ class AgentService:
         )
         total_codes = await db.execute(codes_query)
         
-        # Get total customers
+
         customers_query = select(func.count()).where(
             Customer.agent_id == agent_id
         )
         total_customers = await db.execute(customers_query)
         total_customers_count = total_customers.scalar() or 0
         
-        # Get customer status breakdown
         completed_query = select(func.count()).where(
             Customer.agent_id == agent_id,
             Customer.status.in_([CustomerStatus.ACTIVE, CustomerStatus.PREMIUM])
@@ -58,7 +55,7 @@ class AgentService:
         )
         in_progress = await db.execute(in_progress_query)
         
-        # Get efficiency score
+    
         agent_query = select(User).where(User.id == agent_id)
         agent_result = await db.execute(agent_query)
         agent = agent_result.scalar_one_or_none()
@@ -73,7 +70,7 @@ class AgentService:
             "efficiency_score": agent.efficiency_score if agent else 0.0
         }
     
-    # Referral Codes
+
     async def get_codes(
         self,
         db: AsyncSession,
@@ -88,12 +85,10 @@ class AgentService:
         if status:
             query = query.where(ReferralCode.status == status)
         
-        # Get total count
         count_query = select(func.count()).select_from(query.subquery())
         total = await db.execute(count_query)
         total_count = total.scalar()
         
-        # Get paginated results
         query = query.order_by(desc(ReferralCode.created_at)).offset(skip).limit(limit)
         result = await db.execute(query)
         codes = result.scalars().all()
@@ -106,8 +101,7 @@ class AgentService:
         agent_id: UUID,
         code_data: ReferralCodeCreate
     ) -> ReferralCode:
-        """Create a new referral code"""
-        # Generate unique code
+        
         code_prefix = code_data.bank[:3].upper()
         unique_id = uuid.uuid4().hex[:6].upper()
         code = f"{code_prefix}-{unique_id}"
@@ -131,7 +125,8 @@ class AgentService:
         code_id: UUID,
         agent_id: UUID
     ) -> Optional[ReferralCode]:
-        """Get a specific referral code"""
+
+   
         query = select(ReferralCode).where(
             ReferralCode.id == code_id,
             ReferralCode.agent_id == agent_id
@@ -170,12 +165,12 @@ class AgentService:
         if not code:
             return False
         
-        # Soft delete - set status to inactive
+       
         code.status = ReferralCodeStatus.INACTIVE
         await db.commit()
         return True
     
-    # Rewards
+ 
     async def get_rewards_summary(self, db: AsyncSession, agent_id: UUID) -> Dict[str, Any]:
         """Get rewards overview"""
         # Get total earned
@@ -186,7 +181,6 @@ class AgentService:
         )
         total_earned = await db.execute(earned_query)
         
-        # Get pending rewards
         pending_query = select(func.sum(Transaction.amount)).where(
             Transaction.agent_id == agent_id,
             Transaction.status == TransactionStatus.PENDING,
@@ -194,7 +188,7 @@ class AgentService:
         )
         pending_rewards = await db.execute(pending_query)
         
-        # Get current month earnings
+        
         now = datetime.now(timezone.utc)
         start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
@@ -206,7 +200,7 @@ class AgentService:
         )
         current_month = await db.execute(current_month_query)
         
-        # Get previous month earnings
+        
         start_of_prev_month = (start_of_month - timedelta(days=1)).replace(day=1)
         end_of_prev_month = start_of_month - timedelta(microseconds=1)
         
@@ -222,7 +216,7 @@ class AgentService:
         current_month_value = current_month.scalar() or 0
         prev_month_value = prev_month.scalar() or 0
         
-        # Calculate growth
+      
         growth = 0
         if prev_month_value > 0:
             growth = ((current_month_value - prev_month_value) / prev_month_value) * 100
@@ -253,12 +247,12 @@ class AgentService:
         if transaction_type:
             query = query.where(Transaction.type == transaction_type)
         
-        # Get total count
+       
         count_query = select(func.count()).select_from(query.subquery())
         total = await db.execute(count_query)
         total_count = total.scalar()
         
-        # Get paginated results
+        
         query = query.order_by(desc(Transaction.created_at)).offset(skip).limit(limit)
         query = query.options(
             selectinload(Transaction.customer),
@@ -390,7 +384,8 @@ class AgentService:
         # Update agent's bank details
         agent.default_bank_name = payout_data.bank_name
         agent.bank_account_last4 = payout_data.account_number[-4:] if payout_data.account_number else "0000"
-        # Store encrypted full account number if you have the field
+
+       
         if payout_data.routing_number:
             agent.routing_number = payout_data.routing_number
         
@@ -409,7 +404,7 @@ class AgentService:
             last_updated=datetime.utcnow()
         )
         
-    # Profile
+    
     async def get_profile(self, db: AsyncSession, agent_id: UUID) -> Optional[User]:
         """Get agent profile"""
         query = select(User).where(User.id == agent_id)
@@ -422,7 +417,8 @@ class AgentService:
         agent_id: UUID,
         profile_data: AgentProfileUpdate
     ) -> Optional[User]:
-        """Update agent profile"""
+
+        
         user = await self.get_profile(db, agent_id)
         if not user:
             return None
@@ -434,10 +430,9 @@ class AgentService:
         await db.commit()
         await db.refresh(user)
         return user
-    
-    # Network
+
     async def get_network_stats(self, db: AsyncSession, agent_id: UUID) -> Dict[str, Any]:
-        """Get referral network statistics"""
+        
         downline_query = select(User).where(
             User.referral_partner_id == agent_id,
             User.role == "agent",
