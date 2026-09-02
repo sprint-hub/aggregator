@@ -1,11 +1,3 @@
-"""
-Admin service.
-
-Business logic for the admin panel: platform dashboard, agent management,
-referral code oversight, reward approvals, payment tracking, reporting, and
-platform settings. Mirrors the layering used in app/services/agent_service.py
-(router -> service -> model, no DB access in routers).
-"""
 import uuid as uuid_lib
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
