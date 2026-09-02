@@ -22,7 +22,10 @@ async def list_referral_codes(
     agent_id: Optional[UUID] = None,
 ):
     """List referral codes across all agents"""
-    codes, total = await admin_service.list_referral_codes(db, skip, limit, status, agent_id)
+    try:
+        codes, total = await admin_service.list_referral_codes(db, skip, limit, status, agent_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return {
         "codes": codes,
         "total": total,
@@ -40,7 +43,10 @@ async def update_referral_code_status(
     db: AsyncSession = Depends(get_db)
 ):
     """Admin override of a referral code's status"""
-    code = await admin_service.update_referral_code_status(db, code_id, data.status)
+    try:
+        code = await admin_service.update_referral_code_status(db, code_id, data.status)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if not code:
         raise HTTPException(status_code=404, detail="Referral code not found")
     return {"message": "Referral code status updated successfully"}

@@ -27,7 +27,10 @@ async def list_payments(
     agent_id: Optional[UUID] = None,
 ):
     """List payments across all agents"""
-    payments, total = await admin_service.list_payments(db, skip, limit, status, agent_id)
+    try:
+        payments, total = await admin_service.list_payments(db, skip, limit, status, agent_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return {
         "payments": payments,
         "total": total,
@@ -56,7 +59,10 @@ async def process_payment(
     db: AsyncSession = Depends(get_db)
 ):
     """Advance a payment's status (processing / paid / failed)"""
-    payment = await admin_service.process_payment(db, payment_id, data)
+    try:
+        payment = await admin_service.process_payment(db, payment_id, data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
     return {"message": "Payment updated successfully"}
