@@ -12,7 +12,7 @@ from app.schemas.admin import (
     AdminAgentDetailResponse,
     AdminAgentCreate,
     AdminAgentUpdate,
-    AdminAgentStatusUpdate,
+    AdminAgentStatusUpdate
 )
 
 router = APIRouter()
@@ -75,7 +75,10 @@ async def update_agent(
     data: AdminAgentUpdate,
     current_user: User = Depends(AdminRequired),
     db: AsyncSession = Depends(get_db)
+    # email: Optional[str] = None,
+    
 ):
+
     """Update an agent's profile"""
     agent = await admin_service.update_agent(db, agent_id, data)
     if not agent:

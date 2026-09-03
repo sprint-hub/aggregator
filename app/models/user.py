@@ -40,6 +40,7 @@ class User(BaseModel):
     # Agent specific fields
     agent_code = Column(String(50), unique=True, index=True)
     agent_tier = Column(Enum(AgentTier), nullable=True)
+    email = Column(String(255), unique=True, index=True, nullable=False)
     region = Column(String(100))
     referral_partner_id = Column(UUID(as_uuid=True), nullable=True)  # For downline
     efficiency_score = Column(Float, default=0.0)

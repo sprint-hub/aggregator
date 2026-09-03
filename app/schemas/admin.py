@@ -1,21 +1,10 @@
-"""
-Admin schemas.
-
-Request/response models for the admin panel: platform dashboard, agent
-management, referral code oversight, reward approvals, payment tracking,
-performance reporting, and platform settings.
-
-Follows the same Base/Create/Update/Response split used in app/schemas/agent.py.
-"""
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import Optional, List, Any
 from datetime import datetime
 from uuid import UUID
 
 
-# ---------------------------------------------------------------------------
-# Dashboard
-# ---------------------------------------------------------------------------
+
 
 class AdminDashboardStatsResponse(BaseModel):
     """Platform-wide overview statistics for the admin dashboard"""
