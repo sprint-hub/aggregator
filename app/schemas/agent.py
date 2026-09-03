@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 
-# Dashboard Schemas
+
 class DashboardStatsResponse(BaseModel):
     """Dashboard statistics response"""
     total_codes: int
@@ -17,7 +17,7 @@ class DashboardStatsResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Referral Code Schemas
+
 
 class ReferralCodeBase(BaseModel):
     """Base referral code schema"""
@@ -60,7 +60,7 @@ class ReferralCodeListResponse(BaseModel):
     total_pages: int
 
 
-# Rewards Schemas
+
 class RewardsSummaryResponse(BaseModel):
     """Rewards overview response"""
     total_earned: float

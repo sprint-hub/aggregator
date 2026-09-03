@@ -6,4 +6,6 @@ __all__ = [
     "user_service",
     "auth_service",
     "agent_service",
+    "admin_service",
+    
 ]

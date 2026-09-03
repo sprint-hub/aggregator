@@ -1,11 +1,3 @@
-"""
-Admin service.
-
-Business logic for the admin panel: platform dashboard, agent management,
-referral code oversight, reward approvals, payment tracking, reporting, and
-platform settings. Mirrors the layering used in app/services/agent_service.py
-(router -> service -> model, no DB access in routers).
-"""
 import uuid as uuid_lib
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,11 +30,8 @@ DEFAULT_MINIMUM_WITHDRAWAL = 100.0
 
 
 class AdminService:
-    """Service for admin-only platform operations"""
+    
 
-    # ------------------------------------------------------------------
-    # Dashboard
-    # ------------------------------------------------------------------
     async def get_dashboard_stats(self, db: AsyncSession) -> Dict[str, Any]:
         """Get platform-wide overview statistics"""
         total_agents = (await db.execute(
@@ -107,9 +96,7 @@ class AdminService:
             "total_paid_out": float(total_paid_out),
         }
 
-    # ------------------------------------------------------------------
-    # Agent management
-    # ------------------------------------------------------------------
+
     async def list_agents(
         self,
         db: AsyncSession,
@@ -242,10 +229,8 @@ class AdminService:
         await db.commit()
         await db.refresh(agent)
         return agent
+    
 
-    # ------------------------------------------------------------------
-    # Referral codes (cross-agent)
-    # ------------------------------------------------------------------
     async def list_referral_codes(
         self,
         db: AsyncSession,
@@ -308,9 +293,7 @@ class AdminService:
         await db.refresh(code)
         return code
 
-    # ------------------------------------------------------------------
-    # Rewards (reward transactions) — approve / reject workflow
-    # ------------------------------------------------------------------
+    
     async def list_rewards(
         self,
         db: AsyncSession,
@@ -401,9 +384,7 @@ class AdminService:
         await db.refresh(reward)
         return reward
 
-    # ------------------------------------------------------------------
-    # Payments
-    # ------------------------------------------------------------------
+    
     async def list_payments(
         self,
         db: AsyncSession,
@@ -448,10 +429,7 @@ class AdminService:
     async def create_payment_batch(
         self, db: AsyncSession, data: AdminPaymentBatchCreate
     ) -> Dict[str, Any]:
-        """
-        Create a payment batch: for each agent with approved, unpaid credit
-        transactions, create a single pending Payment for their outstanding balance.
-        """
+    
         payment_date = data.payment_date or datetime.now(timezone.utc)
         created_payments: List[Payment] = []
 
@@ -532,9 +510,7 @@ class AdminService:
         await db.refresh(payment)
         return payment
 
-    # ------------------------------------------------------------------
-    # Reports
-    # ------------------------------------------------------------------
+   
     async def get_agent_performance_report(
         self,
         db: AsyncSession,
@@ -592,9 +568,7 @@ class AdminService:
 
         return results, total
 
-    # ------------------------------------------------------------------
-    # Settings
-    # ------------------------------------------------------------------
+    
     async def _get_or_default(self, db: AsyncSession, key: str, default: float) -> float:
         query = select(SystemSetting).where(SystemSetting.key == key)
         setting = (await db.execute(query)).scalar_one_or_none()
@@ -640,6 +614,5 @@ class AdminService:
 
         await db.commit()
         return await self.get_platform_settings(db)
-
 
 admin_service = AdminService()
